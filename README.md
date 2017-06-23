@@ -1,7 +1,7 @@
 # TexturePacker
 An open source texture packer written in Qt
 
-## Supported game engines:
+## Supported game engines
 - Cocos2d
 - Cocos2d-x
 
