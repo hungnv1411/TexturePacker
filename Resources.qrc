@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>res/ic_add_smart_folder.png</file>
+        <file>res/ic_add_sprite.png</file>
+        <file>res/ic_browse.png</file>
+        <file>res/ic_new.png</file>
+        <file>res/ic_publish_project.png</file>
+        <file>res/ic_remove_sprite.png</file>
+        <file>res/ic_remove_sprite2.png</file>
+        <file>res/ic_save_project.png</file>
+        <file>res/ic_setting.png</file>
+    </qresource>
+</RCC>

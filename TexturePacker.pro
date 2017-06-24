@@ -29,3 +29,6 @@ SOURCES += \
 
 HEADERS += \
         MainWindow.hpp
+
+RESOURCES += \
+    Resources.qrc
