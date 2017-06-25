@@ -25,10 +25,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        MainWindow.cpp
+        MainWindow.cpp \
+    TPProject.cpp \
+    utils/Utils.cpp
 
 HEADERS += \
-        MainWindow.hpp
+        MainWindow.hpp \
+    TPProject.hpp \
+    utils/Utils.hpp
 
 RESOURCES += \
     Resources.qrc

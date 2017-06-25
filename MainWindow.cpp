@@ -1,23 +1,10 @@
 #include "MainWindow.hpp"
+#include "utils/Utils.hpp"
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-//    QWidget* centralWidget = new QWidget();
-//    setCentralWidget(centralWidget);
-
-//    QWidget *topFiller = new QWidget;
-//    topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-//    QWidget *bottomFiller = new QWidget;
-//    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-//    QVBoxLayout *layout = new QVBoxLayout;
-//    layout->setMargin(5);
-//    layout->addWidget(topFiller);
-//    layout->addWidget(bottomFiller);
-//    centralWidget->setLayout(layout);
-
     createContentView();
     createActions();
     createMenus();
@@ -25,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     createStatusbar();
     createSpritesTreeview();
     createExporterSettingPane();
+    initConnections();
 
     setWindowTitle(tr("TexturePacker"));
 
@@ -155,14 +143,10 @@ void MainWindow::createSpritesTreeview() {
     addDockWidget(Qt::LeftDockWidgetArea, dock);
     dock->setObjectName("spritesDock");
 
-    QTreeWidget *treeWidget = new QTreeWidget(dock);
-    treeWidget->setColumnCount(1);
-    dock->setWidget(treeWidget);
-
-    QList<QTreeWidgetItem *> items;
-    for (int i = 0; i < 10; ++i)
-        items.append(new QTreeWidgetItem((QTreeWidget*)0, QStringList(QString("item: %1").arg(i))));
-    treeWidget->insertTopLevelItems(0, items);
+    addedSpritesTreeWidget = new QTreeWidget(dock);
+    addedSpritesTreeWidget->setColumnCount(1);
+    dock->setWidget(addedSpritesTreeWidget);
+    addedSpritesTreeWidget->header()->close();
 }
 
 void MainWindow::createExporterSettingPane() {
@@ -180,6 +164,11 @@ void MainWindow::createContentView() {
     contentScrollArea = new QScrollArea();
     contentScrollArea->setBackgroundRole(QPalette::Dark);
     setCentralWidget(contentScrollArea);
+}
+
+void MainWindow::initConnections() {
+    connect(addSpriteAction, &QAction::triggered, this, &MainWindow::onAddSprites);
+    connect(addSmartFolderAction, &QAction::triggered, this, &MainWindow::onAddSmartFolder);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -212,6 +201,7 @@ void MainWindow::writeSettings() {
 }
 
 bool MainWindow::requestSaveProject() {
+    if (!projectLoader.isModified()) return true;
     const QMessageBox::StandardButton ret = QMessageBox::warning(this, QCoreApplication::applicationName(),
                                tr("The document has been modified.\n"
                                   "Do you want to save your changes?"),
@@ -231,6 +221,60 @@ bool MainWindow::saveProject() {
     return true;
 }
 
+void MainWindow::onAddSprites() {
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    QString lastOpenDirectory = settings.value("lastDirectory", "").toString();
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, tr("Add sprites"), lastOpenDirectory, tr("Image Files (*.png *.jpg *.jpeg)"));
+    QStringList loadingFilePaths;
+    for (int i = 0; i < fileNames.size(); i++) {
+        QString path = fileNames[i];
+        if (Utils::isImage(path)) {
+            loadingFilePaths.append(QDir::toNativeSeparators(path));
+        }
+    }
+
+    if (loadingFilePaths.size() > 0) {
+        QFileInfo fileInfo = QFileInfo(loadingFilePaths[0]);
+        lastOpenDirectory = fileInfo.absoluteDir().path();
+        settings.setValue("lastDirectory", lastOpenDirectory);
+        loadFiles(loadingFilePaths);
+    }
+}
+
+void MainWindow::onAddSmartFolder() {
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    QString lastOpenDirectory = settings.value("lastDirectory", "").toString();
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Select directory"), lastOpenDirectory);
+    if(dir.length() > 0) {
+        lastOpenDirectory = QDir::toNativeSeparators(dir);
+        settings.setValue("lastDirectory", lastOpenDirectory);
+
+        QString folderName = Utils::getFileName(lastOpenDirectory);
+        QTreeWidgetItem* rootItem = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(folderName)));
+        rootItem->setIcon(0, QIcon(":/res/ic_browse.png"));
+
+        TPConfigurations& configs = projectLoader.getConfigurations();
+        QStringList filePaths = Utils::enumerateContentInDirectory(lastOpenDirectory, configs.isRecursive);
+        for (int i = 0; i < filePaths.size(); ++i) {
+            QString path = filePaths[i];
+            QTreeWidgetItem* item = new QTreeWidgetItem(rootItem, QStringList(Utils::getFileName(path)));
+            item->setIcon(0, QIcon(path));
+            rootItem->addChild(item);
+        }
+        rootItem->setExpanded(true);
+    }
+}
+
+void MainWindow::loadFiles(const QStringList &filePaths) {
+    QList<QTreeWidgetItem *> items;
+    for (int i = 0; i < filePaths.size(); ++i) {
+        QString path = filePaths[i];
+        QTreeWidgetItem* item = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(path)));
+        item->setIcon(0, QIcon(path));
+        items.append(item);
+    }
+    addedSpritesTreeWidget->insertTopLevelItems(0, items);
+}
 
 
 
