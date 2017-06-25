@@ -17,6 +17,17 @@ private:
     void createActions();
     void createMenus();
     void createToolbar();
+    void createStatusbar();
+    void createSpritesTreeview();
+    void createExporterSettingPane();
+    void createContentView();
+    void readSettings();
+    void writeSettings();
+    bool requestSaveProject();
+    bool saveProject();
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     // menu bar
@@ -36,6 +47,10 @@ private:
     QAction* aboutAction;
     // toolbar
     QToolBar* fileToolbar;
+    // status bar
+    QStatusBar* statusBar;
+    // content view
+    QScrollArea* contentScrollArea;
 };
 
 #endif // MAINWINDOW_HPP

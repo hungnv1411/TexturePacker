@@ -3,28 +3,32 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    QWidget* centralWidget = new QWidget();
-    setCentralWidget(centralWidget);
+//    QWidget* centralWidget = new QWidget();
+//    setCentralWidget(centralWidget);
 
-    QWidget *topFiller = new QWidget;
-    topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+//    QWidget *topFiller = new QWidget;
+//    topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QWidget *bottomFiller = new QWidget;
-    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+//    QWidget *bottomFiller = new QWidget;
+//    bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->setMargin(5);
-    layout->addWidget(topFiller);
-    layout->addWidget(bottomFiller);
-    centralWidget->setLayout(layout);
+//    QVBoxLayout *layout = new QVBoxLayout;
+//    layout->setMargin(5);
+//    layout->addWidget(topFiller);
+//    layout->addWidget(bottomFiller);
+//    centralWidget->setLayout(layout);
 
+    createContentView();
     createActions();
     createMenus();
     createToolbar();
+    createStatusbar();
+    createSpritesTreeview();
+    createExporterSettingPane();
 
     setWindowTitle(tr("TexturePacker"));
-    setMinimumSize(800, 600);
-    resize(1024, 768);
+
+    readSettings();
 }
 
 MainWindow::~MainWindow()
@@ -100,8 +104,8 @@ void MainWindow::createMenus() {
 
     editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(addSpriteAction);
-    editMenu->addAction(addSmartFolderAction);
     editMenu->addAction(removeSpriteAction);
+    editMenu->addAction(addSmartFolderAction);
 
     toolMenu = menuBar()->addMenu(tr("&Tools"));
     toolMenu->addAction(optionAction);
@@ -114,6 +118,7 @@ void MainWindow::createToolbar() {
     fileToolbar = this->addToolBar(tr("File"));
     fileToolbar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     fileToolbar->setMovable(false);
+    fileToolbar->setObjectName("mainToolbar");
 
     fileToolbar->addAction(newAction);
     fileToolbar->addAction(openAction);
@@ -133,6 +138,97 @@ void MainWindow::createToolbar() {
     fileToolbar->addWidget(empty);
 
     fileToolbar->addAction(optionAction);
+}
+
+void MainWindow::createStatusbar() {
+    statusBar = new QStatusBar();
+    this->setStatusBar(statusBar);
+
+    QLabel* emptyLabel = new QLabel(tr("Empty"));
+    statusBar->addWidget(emptyLabel);
+}
+
+void MainWindow::createSpritesTreeview() {
+    QDockWidget *dock = new QDockWidget(tr("Sprites"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea);
+    dock->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+    addDockWidget(Qt::LeftDockWidgetArea, dock);
+    dock->setObjectName("spritesDock");
+
+    QTreeWidget *treeWidget = new QTreeWidget(dock);
+    treeWidget->setColumnCount(1);
+    dock->setWidget(treeWidget);
+
+    QList<QTreeWidgetItem *> items;
+    for (int i = 0; i < 10; ++i)
+        items.append(new QTreeWidgetItem((QTreeWidget*)0, QStringList(QString("item: %1").arg(i))));
+    treeWidget->insertTopLevelItems(0, items);
+}
+
+void MainWindow::createExporterSettingPane() {
+    QDockWidget *dock = new QDockWidget(tr("Settings"), this);
+    dock->setAllowedAreas(Qt::RightDockWidgetArea);
+    dock->setFeatures(QDockWidget::DockWidgetFeature::NoDockWidgetFeatures);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    dock->setObjectName("exporterSettingsDock");
+
+    QListWidget* settingWidget = new QListWidget(dock);
+    dock->setWidget(settingWidget);
+}
+
+void MainWindow::createContentView() {
+    contentScrollArea = new QScrollArea();
+    contentScrollArea->setBackgroundRole(QPalette::Dark);
+    setCentralWidget(contentScrollArea);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (requestSaveProject()) {
+        writeSettings();
+        event->accept();
+    } else {
+        event->ignore();
+    }
+}
+
+void MainWindow::readSettings() {
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    const QByteArray geometry = settings.value("geometry", QByteArray()).toByteArray();
+    if (geometry.isEmpty()) {
+        const QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
+        resize(availableGeometry.width() * 0.75, availableGeometry.height() * 0.75);
+        move((availableGeometry.width() - width()) / 2, (availableGeometry.height() - height()) / 2);
+    } else {
+        restoreGeometry(geometry);
+    }
+    restoreState(settings.value("windowState").toByteArray());
+}
+
+void MainWindow::writeSettings() {
+    QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+}
+
+bool MainWindow::requestSaveProject() {
+    const QMessageBox::StandardButton ret = QMessageBox::warning(this, QCoreApplication::applicationName(),
+                               tr("The document has been modified.\n"
+                                  "Do you want to save your changes?"),
+                               QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+    switch (ret) {
+    case QMessageBox::Save:
+        return saveProject();
+    case QMessageBox::Cancel:
+        return false;
+    default:
+        break;
+    }
+    return true;
+}
+
+bool MainWindow::saveProject() {
+    return true;
 }
 
 
