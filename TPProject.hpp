@@ -4,13 +4,11 @@
 #include <QtCore>
 
 struct TPConfigurations {
-    bool isSmartFolder;
     bool isRecursive;
-    QString rootFolder;
+    QStringList folders;
     QStringList files;
 
     TPConfigurations() {
-        isSmartFolder = false;
         isRecursive = true;
     }
 };
@@ -22,7 +20,7 @@ public:
     virtual ~TPProject();
 
     bool load(const QString& projectFilePath);
-    void save();
+    void save(const QString& projectFilePath);
 
     TPConfigurations& getConfigurations() {
         return configs;
@@ -31,6 +29,9 @@ public:
     bool isModified() {
         return modified;
     }
+
+private:
+    void resolveRelativePath();
 
 private:
     TPConfigurations configs;

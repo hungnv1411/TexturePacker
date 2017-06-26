@@ -27,6 +27,8 @@ private:
     void writeSettings();
     bool requestSaveProject();
     bool saveProject();
+    void updateSpriteSheet();
+    void newProject();
 
     // packer
 private:
@@ -37,6 +39,7 @@ protected:
 protected slots:
     void onAddSprites();
     void onAddSmartFolder();
+    void removeSelectedSprites();
 
 private:
     // menu bar
@@ -65,6 +68,7 @@ private:
 
 private:
     TPProject projectLoader;
+    QStringList spriteFileNames;
 };
 
 #endif // MAINWINDOW_HPP

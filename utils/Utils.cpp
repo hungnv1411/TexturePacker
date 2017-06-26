@@ -1,7 +1,7 @@
 #include "Utils.hpp"
 
-QStringList Utils::supportedImageFormats = {"png", "jpg", "jpeg"};
-QStringList Utils::supportedImageFormatFilters = {"*.png", "*.jpg", "*.jpeg"};
+QStringList Utils::supportedImageFormats = {"png", "jpg", "jpeg", "gif"};
+QStringList Utils::supportedImageFormatFilters = {"*.png", "*.jpg", "*.jpeg", "*.gif"};
 
 bool Utils::isImage(const QString &filePath) {
     QString ext = getFileExtension(filePath).toLower();
@@ -33,11 +33,13 @@ QStringList Utils::enumerateContentInDirectory(const QString &directory, bool re
         ret.append(QDir::toNativeSeparators(files[i].absoluteFilePath()));
     }
 
-    QFileInfoList dirs = dir.entryInfoList(QDir::Filter::NoDotAndDotDot | QDir::Dirs);
-    for (int i = 0; i < dirs.size(); i++) {
-        QFileInfo info = dirs[i];
-        QString path = info.absoluteFilePath();
-        ret.append(enumerateContentInDirectory(path, recursive));
+    if (recursive) {
+        QFileInfoList dirs = dir.entryInfoList(QDir::Filter::NoDotAndDotDot | QDir::Dirs);
+        for (int i = 0; i < dirs.size(); i++) {
+            QFileInfo info = dirs[i];
+            QString path = info.absoluteFilePath();
+            ret.append(enumerateContentInDirectory(path, recursive));
+        }
     }
     return ret;
 }
