@@ -40,6 +40,7 @@ protected slots:
     void onAddSprites();
     void onAddSmartFolder();
     void removeSelectedSprites();
+    void spriteItemClicked(QTreeWidgetItem *item, int column);
 
 private:
     // menu bar

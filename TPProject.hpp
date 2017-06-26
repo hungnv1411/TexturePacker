@@ -2,16 +2,7 @@
 #define TPPROJECT_HPP
 
 #include <QtCore>
-
-struct TPConfigurations {
-    bool isRecursive;
-    QStringList folders;
-    QStringList files;
-
-    TPConfigurations() {
-        isRecursive = true;
-    }
-};
+#include "packer/Packer.hpp"
 
 class TPProject
 {
@@ -22,7 +13,7 @@ public:
     bool load(const QString& projectFilePath);
     void save(const QString& projectFilePath);
 
-    TPConfigurations& getConfigurations() {
+    packer::Configurations& getConfigurations() {
         return configs;
     }
 
@@ -34,7 +25,7 @@ private:
     void resolveRelativePath();
 
 private:
-    TPConfigurations configs;
+    packer::Configurations configs;
     bool modified;
 };
 

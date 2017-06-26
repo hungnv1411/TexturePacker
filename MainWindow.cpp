@@ -126,6 +126,8 @@ void MainWindow::createToolbar() {
     fileToolbar->addWidget(empty);
 
     fileToolbar->addAction(optionAction);
+
+    setUnifiedTitleAndToolBarOnMac(true);
 }
 
 void MainWindow::createStatusbar() {
@@ -144,7 +146,7 @@ void MainWindow::createSpritesTreeview() {
     dock->setObjectName("spritesDock");
 
     addedSpritesTreeWidget = new QTreeWidget(dock);
-//    addedSpritesTreeWidget->setSelectionMode(QAbstractItemView::SelectionMode::MultiSelection);
+    addedSpritesTreeWidget->setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);
     addedSpritesTreeWidget->setColumnCount(1);
     dock->setWidget(addedSpritesTreeWidget);
     addedSpritesTreeWidget->header()->close();
@@ -171,6 +173,7 @@ void MainWindow::initConnections() {
     connect(addSpriteAction, &QAction::triggered, this, &MainWindow::onAddSprites);
     connect(addSmartFolderAction, &QAction::triggered, this, &MainWindow::onAddSmartFolder);
     connect(removeSpriteAction, &QAction::triggered, this, &MainWindow::removeSelectedSprites);
+    connect(addedSpritesTreeWidget, &QTreeWidget::itemClicked, this, &MainWindow::spriteItemClicked);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -251,7 +254,7 @@ void MainWindow::onAddSmartFolder() {
         lastOpenDirectory = QDir::toNativeSeparators(dir);
         settings.setValue("lastDirectory", lastOpenDirectory);
 
-        TPConfigurations& configs = projectLoader.getConfigurations();
+        packer::Configurations& configs = projectLoader.getConfigurations();
         if (!configs.folders.contains(lastOpenDirectory)) {
             configs.folders.append(lastOpenDirectory);
 
@@ -262,6 +265,7 @@ void MainWindow::onAddSmartFolder() {
             QStringList filePaths = Utils::enumerateContentInDirectory(lastOpenDirectory, configs.isRecursive);
             for (int i = 0; i < filePaths.size(); ++i) {
                 QString path = filePaths[i];
+                spriteFileNames.append(path);
                 QTreeWidgetItem* item = new QTreeWidgetItem(rootItem, QStringList(Utils::getFileName(path)));
                 item->setIcon(0, QIcon(path));
                 rootItem->addChild(item);
@@ -275,13 +279,14 @@ void MainWindow::onAddSmartFolder() {
 
 void MainWindow::loadFiles(const QStringList &filePaths) {
 
-    TPConfigurations& configs = projectLoader.getConfigurations();
+    packer::Configurations& configs = projectLoader.getConfigurations();
 
     QList<QTreeWidgetItem *> items;
     for (int i = 0; i < filePaths.size(); ++i) {
         QString path = filePaths[i];
         if (!configs.files.contains(path)) {
             configs.files.append(path);
+            spriteFileNames.append(path);
 
             QTreeWidgetItem* item = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(path)));
             item->setIcon(0, QIcon(path));
@@ -317,4 +322,13 @@ void MainWindow::newProject() {
     spriteFileNames.clear();
     projectLoader = TPProject();
 }
+
+void MainWindow::spriteItemClicked(QTreeWidgetItem *item, int column) {
+//    addedSpritesTreeWidget->setCurrentItem(item);
+}
+
+
+
+
+
 

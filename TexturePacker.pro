@@ -27,12 +27,17 @@ SOURCES += \
         main.cpp \
         MainWindow.cpp \
     TPProject.cpp \
-    utils/Utils.cpp
+    utils/Utils.cpp \
+    packer/ImagePacker.cpp \
+    packer/MaxRects.cpp
 
 HEADERS += \
         MainWindow.hpp \
     TPProject.hpp \
-    utils/Utils.hpp
+    utils/Utils.hpp \
+    packer/ImagePacker.hpp \
+    packer/Packer.hpp \
+    packer/MaxRects.hpp
 
 RESOURCES += \
     Resources.qrc
