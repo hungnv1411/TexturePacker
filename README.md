@@ -7,3 +7,8 @@ An open source texture packer written in Qt
 
 ## Status
 In progress
+
+## References
+- [RectangleBinPack](https://github.com/juj/RectangleBinPack)
+- [Cheetah-Texture-Packer](https://github.com/scriptum/Cheetah-Texture-Packer)
+
