@@ -5,6 +5,10 @@
 #include <QVBoxLayout>
 #include <QtWidgets>
 #include "TPProject.hpp"
+#include "AtlasTextureView.hpp"
+#include "packer/ImagePacker.hpp"
+
+using namespace packer;
 
 class MainWindow : public QMainWindow
 {
@@ -27,7 +31,7 @@ private:
     void writeSettings();
     bool requestSaveProject();
     bool saveProject();
-    void updateSpriteSheet();
+    void updateSpriteSheet(bool exporting = false);
     void newProject();
 
     // packer
@@ -36,6 +40,8 @@ private:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
+signals:
+    void renderedImage(const QList<QImage>& image);
 protected slots:
     void onAddSprites();
     void onAddSmartFolder();
@@ -62,14 +68,21 @@ private:
     QToolBar* fileToolbar;
     // status bar
     QStatusBar* statusBar;
+    QLabel* statusLabel;
     // content view
     QScrollArea* contentScrollArea;
+    AtlasTextureView* atlasPreview;
     // dock sprites
     QTreeWidget* addedSpritesTreeWidget;
+    // settings
+    QScrollArea* settingScrollArea;
 
 private:
     TPProject projectLoader;
-    QStringList spriteFileNames;
+    QList<packer::SpritePtr> sprites;
+    packer::ImagePacker imagePacker;
+
+    QPixmap pattern;
 };
 
 #endif // MAINWINDOW_HPP

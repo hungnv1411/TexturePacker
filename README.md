@@ -11,4 +11,5 @@ In progress
 ## References
 - [RectangleBinPack](https://github.com/juj/RectangleBinPack)
 - [Cheetah-Texture-Packer](https://github.com/scriptum/Cheetah-Texture-Packer)
+- [texpack](https://github.com/urraka/texpack)
 

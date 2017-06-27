@@ -9,5 +9,6 @@
         <file>res/ic_remove_sprite2.png</file>
         <file>res/ic_save_project.png</file>
         <file>res/ic_setting.png</file>
+        <file>res/ic_setting_panel_header.png</file>
     </qresource>
 </RCC>

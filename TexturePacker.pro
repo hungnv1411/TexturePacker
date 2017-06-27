@@ -29,7 +29,13 @@ SOURCES += \
     TPProject.cpp \
     utils/Utils.cpp \
     packer/ImagePacker.cpp \
-    packer/MaxRects.cpp
+    packer/MaxRects.cpp \
+    packer/BinPack.cpp \
+    views/DataSettingView.cpp \
+    views/TextureSettingView.cpp \
+    views/SpriteSettingView.cpp \
+    views/SettingPanel.cpp \
+    AtlasTextureView.cpp
 
 HEADERS += \
         MainWindow.hpp \
@@ -37,7 +43,13 @@ HEADERS += \
     utils/Utils.hpp \
     packer/ImagePacker.hpp \
     packer/Packer.hpp \
-    packer/MaxRects.hpp
+    packer/MaxRects.hpp \
+    packer/BinPack.hpp \
+    views/DataSettingView.hpp \
+    views/TextureSettingView.hpp \
+    views/SpriteSettingView.hpp \
+    views/SettingPanel.hpp \
+    AtlasTextureView.hpp
 
 RESOURCES += \
     Resources.qrc
