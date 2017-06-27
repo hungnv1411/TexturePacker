@@ -13,6 +13,8 @@ public:
 
     static quint32 hash(quint32 crc, const uchar *buf, size_t len);
 
+    static QRect crop(const QImage& img, int cropThreshold);
+
 public:
     static QStringList supportedImageFormats;
     static QStringList supportedImageFormatFilters;

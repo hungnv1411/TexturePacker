@@ -37,6 +37,7 @@ private:
     // packer
 private:
     void loadFiles(const QStringList& filePaths);
+    void loadDirectory(const QString& directory);
 protected:
     void closeEvent(QCloseEvent *event) override;
 
@@ -79,7 +80,6 @@ private:
 
 private:
     TPProject projectLoader;
-    QList<packer::SpritePtr> sprites;
     packer::ImagePacker imagePacker;
 
     QPixmap pattern;

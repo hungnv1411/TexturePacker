@@ -10,36 +10,34 @@ class ImagePacker
 public:
     ImagePacker();
 
-    void addSprite(const SpritePtr& sprite) {
+    void addSprite(const Sprite& sprite) {
         sprites.append(sprite);
     }
 
-    void addSprites(const QList<SpritePtr>& sprites) {
+    void addSprites(const QList<Sprite>& sprites) {
         this->sprites.append(sprites);
     }
 
     bool pack(ConfigurationsPtr& configs);
 
 private:
-    void internalPack(int heur, int w, int h);
-    void sortImages();
+    void sortImages(int w, int h);
 
 public:
-    QList<SpritePtr> sprites;
+    QList<Sprite> sprites;
     QList<QSize> bins;
 
-    unsigned addImgesToBins();
-    void cropLastImage(bool wh);
-    void divideLastImage(bool wh);
+    unsigned addImgesToBins(int w, int h);
+    void cropLastImage(int w, int h, bool wh);
+    void divideLastImage(int w, int h, bool wh);
     void updateCrop();
     float getFillRate();
     void clearBin(int binIndex);
-    int fillBin(int binIndex);
+    int fillBin(int w, int h, int binIndex);
 
-    QRect crop(const QImage& img);
     void sort();
-    const SpritePtr find(const SpritePtr& data);
-    void removeId(const SpritePtr& data);
+    const Sprite* find(Sprite* data);
+    void removeId(Sprite* data);
     void realculateDuplicates();
     void clear();
     int compare;

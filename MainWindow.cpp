@@ -298,29 +298,32 @@ void MainWindow::onAddSmartFolder() {
         lastOpenDirectory = QDir::toNativeSeparators(dir);
         settings.setValue("lastDirectory", lastOpenDirectory);
 
-        packer::ConfigurationsPtr& configs = projectLoader.getConfigurations();
-        if (!configs->folders.contains(lastOpenDirectory)) {
-            configs->folders.append(lastOpenDirectory);
+        loadDirectory(lastOpenDirectory);
+    }
+}
 
-            QString folderName = Utils::getFileName(lastOpenDirectory);
-            QTreeWidgetItem* rootItem = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(folderName)));
-            rootItem->setIcon(0, QIcon(":/res/ic_browse.png"));
+void MainWindow::loadDirectory(const QString& directory) {
+    packer::ConfigurationsPtr& configs = projectLoader.getConfigurations();
+    if (!configs->folders.contains(directory)) {
+        configs->folders.append(directory);
 
-            QStringList filePaths = Utils::enumerateContentInDirectory(lastOpenDirectory, configs->isRecursive);
-            for (int i = 0; i < filePaths.size(); ++i) {
-                QString path = filePaths[i];
-                SpritePtr s = SpritePtr(new Sprite(path));
-                sprites.append(s);
-                imagePacker.addSprite(s);
+        QString folderName = Utils::getFileName(directory);
+        QTreeWidgetItem* rootItem = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(folderName)));
+        rootItem->setIcon(0, QIcon(":/res/ic_browse.png"));
 
-                QTreeWidgetItem* item = new QTreeWidgetItem(rootItem, QStringList(Utils::getFileName(path)));
-                item->setIcon(0, QIcon(path));
-                rootItem->addChild(item);
-            }
-            rootItem->setExpanded(true);
+        QStringList filePaths = Utils::enumerateContentInDirectory(directory, configs->isRecursive);
+        for (int i = 0; i < filePaths.size(); ++i) {
+            QString path = filePaths[i];
+            Sprite s(path);
+            imagePacker.addSprite(s);
 
-            updateSpriteSheet();
+            QTreeWidgetItem* item = new QTreeWidgetItem(rootItem, QStringList(Utils::getFileName(path)));
+            item->setIcon(0, QIcon(path));
+            rootItem->addChild(item);
         }
+        rootItem->setExpanded(true);
+
+        updateSpriteSheet();
     }
 }
 
@@ -333,8 +336,7 @@ void MainWindow::loadFiles(const QStringList &filePaths) {
         QString path = filePaths[i];
         if (!configs->files.contains(path)) {
             configs->files.append(path);
-            SpritePtr s = SpritePtr(new Sprite(path));
-            sprites.append(s);
+            Sprite s(path);
             imagePacker.addSprite(s);
 
             QTreeWidgetItem* item = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(path)));
@@ -413,31 +415,31 @@ void MainWindow::updateSpriteSheet(bool exporting) {
                 out << "textures: " << imgFile << "\n";
                 for(i = 0; i < imagePacker.sprites.size(); i++)
                 {
-                    if(imagePacker.sprites.at(i)->textureId != j)
+                    if(imagePacker.sprites.at(i).textureId != j)
                     {
                         continue;
                     }
-                    QPoint pos(imagePacker.sprites.at(i)->pos.x() + configs->border.left + configs->extrude,
-                               imagePacker.sprites.at(i)->pos.y() + configs->border.top + configs->extrude);
+                    QPoint pos(imagePacker.sprites.at(i).pos.x() + configs->border.left + configs->extrude,
+                               imagePacker.sprites.at(i).pos.y() + configs->border.top + configs->extrude);
                     QSize size, sizeOrig;
                     QRect crop;
-                    sizeOrig = imagePacker.sprites.at(i)->size;
+                    sizeOrig = imagePacker.sprites.at(i).size;
                     if(!configs->cropThreshold)
                     {
-                        size = imagePacker.sprites.at(i)->size;
+                        size = imagePacker.sprites.at(i).size;
                         crop = QRect(0, 0, size.width(), size.height());
                     }
                     else
                     {
-                        size = imagePacker.sprites.at(i)->crop.size();
-                        crop = imagePacker.sprites.at(i)->crop;
+                        size = imagePacker.sprites.at(i).crop.size();
+                        crop = imagePacker.sprites.at(i).crop;
                     }
-                    if(imagePacker.sprites.at(i)->rotated)
+                    if(imagePacker.sprites.at(i).rotated)
                     {
                         size.transpose();
                         crop = QRect(crop.y(), crop.x(), crop.height(), crop.width());
                     }
-                    out << Utils::getFileName(imagePacker.sprites[i]->path)
+                    out << Utils::getFileName(imagePacker.sprites[i].path)
                         <<
                         "\t" <<
                         pos.x() << "\t" <<
@@ -448,52 +450,52 @@ void MainWindow::updateSpriteSheet(bool exporting) {
                         crop.y() << "\t" <<
                         sizeOrig.width() << "\t" <<
                         sizeOrig.height() << "\t" <<
-                        (imagePacker.sprites.at(i)->rotated ? "r" : "") << "\n";
+                        (imagePacker.sprites.at(i).rotated ? "r" : "") << "\n";
                 }
             }
         }
     }
     for(i = 0; i < imagePacker.sprites.size(); i++)
     {
-        if(imagePacker.sprites.at(i)->pos == QPoint(999999, 999999))
+        if(imagePacker.sprites.at(i).pos == QPoint(999999, 999999))
         {
             continue;
         }
-        if(imagePacker.sprites.at(i)->duplicatedSprite != NULL && configs->merge)
+        if(imagePacker.sprites.at(i).duplicatedSprite != NULL && configs->merge)
         {
             continue;
         }
-        QPoint pos(imagePacker.sprites.at(i)->pos.x() + configs->border.left,
-                   imagePacker.sprites.at(i)->pos.y() + configs->border.top);
+        QPoint pos(imagePacker.sprites.at(i).pos.x() + configs->border.left,
+                   imagePacker.sprites.at(i).pos.y() + configs->border.top);
         QSize size;
         QRect crop;
         if(!configs->cropThreshold)
         {
-            size = imagePacker.sprites.at(i)->size;
+            size = imagePacker.sprites.at(i).size;
             crop = QRect(0, 0, size.width(), size.height());
         }
         else
         {
-            size = imagePacker.sprites.at(i)->crop.size();
-            crop = imagePacker.sprites.at(i)->crop;
+            size = imagePacker.sprites.at(i).crop.size();
+            crop = imagePacker.sprites.at(i).crop;
         }
         QImage img;
         if((exporting || previewWithImages))
         {
-            img = QImage(imagePacker.sprites[i]->path);
+            img = imagePacker.sprites[i].texture;
         }
-        if(imagePacker.sprites.at(i)->rotated)
+        if(imagePacker.sprites.at(i).rotated)
         {
             QTransform myTransform;
             myTransform.rotate(90);
             img = img.transformed(myTransform);
             size.transpose();
-            crop = QRect(imagePacker.sprites.at(i)->size.height() - crop.y() - crop.height(),
+            crop = QRect(imagePacker.sprites.at(i).size.height() - crop.y() - crop.height(),
                          crop.x(), crop.height(), crop.width());
         }
-        if(imagePacker.sprites.at(i)->textureId < imagePacker.bins.size())
+        if(imagePacker.sprites.at(i).textureId < imagePacker.bins.size())
         {
-            QPainter p(&textures.operator [](imagePacker.sprites.at(i)->textureId));
+            QPainter p(&textures.operator [](imagePacker.sprites.at(i).textureId));
             if(!exporting)
             {
                 p.fillRect(pos.x(), pos.y(), size.width() + 2 * configs->extrude,
@@ -636,7 +638,6 @@ void MainWindow::updateSpriteSheet(bool exporting) {
 }
 
 void MainWindow::newProject() {
-    sprites.clear();
     projectLoader = TPProject();
 }
 

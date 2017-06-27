@@ -33,13 +33,12 @@ struct PackedImage
     int id;
 };
 
-struct Sprite;
-typedef QSharedPointer<Sprite> SpritePtr;
 struct Sprite {
     quint32 hash;
     QString path;
+    QImage texture;
     int textureId;
-    SpritePtr duplicatedSprite;
+    Sprite* duplicatedSprite;
 
     QPoint pos;
     QSize size;
@@ -50,10 +49,11 @@ struct Sprite {
 
     Sprite(const QString& path) {
         this->path = path;
-        QImage texture = QImage(path);
+        this->texture = QImage(path);
         this->hash = Utils::hash(0, texture.bits(), texture.byteCount());
         textureId = -1;
-        duplicatedSprite = nullptr;
+        duplicatedSprite = NULL;
+        size = texture.size();
     }
 
     bool operator ==(const Sprite& other) {
@@ -118,8 +118,8 @@ struct Configurations {
         minTextureSizeX = 32;
         minTextureSizeY = 32;
 
-        atlasHeight = 512;
-        atlasWidth = 512;
+        atlasHeight = 2048;
+        atlasWidth = 2048;
     }
 
     int atlasWidth;
