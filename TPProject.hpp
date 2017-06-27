@@ -13,7 +13,7 @@ public:
     bool load(const QString& projectFilePath);
     void save(const QString& projectFilePath);
 
-    packer::Configurations& getConfigurations() {
+    packer::ConfigurationsPtr& getConfigurations() {
         return configs;
     }
 
@@ -25,7 +25,7 @@ private:
     void resolveRelativePath();
 
 private:
-    packer::Configurations configs;
+    packer::ConfigurationsPtr configs;
     bool modified;
 };
 

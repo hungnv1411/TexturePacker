@@ -2,7 +2,7 @@
 
 TPProject::TPProject()
     : modified(false) {
-
+    configs = packer::ConfigurationsPtr(new packer::Configurations());
 }
 
 TPProject::~TPProject() {

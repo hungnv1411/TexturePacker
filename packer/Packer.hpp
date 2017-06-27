@@ -3,6 +3,7 @@
 
 #include <QtCore>
 #include <QImage>
+#include "../utils/Utils.hpp"
 
 namespace packer {
 
@@ -32,28 +33,32 @@ struct PackedImage
     int id;
 };
 
+struct Sprite;
+typedef QSharedPointer<Sprite> SpritePtr;
 struct Sprite {
+    quint32 hash;
     QString path;
+    int textureId;
+    SpritePtr duplicatedSprite;
+
+    QPoint pos;
+    QSize size;
+    QSize sizeCurrent;
+    QRect crop;
+    bool cropped;
+    bool rotated;
+
+    Sprite(const QString& path) {
+        this->path = path;
+        QImage texture = QImage(path);
+        this->hash = Utils::hash(0, texture.bits(), texture.byteCount());
+        textureId = -1;
+        duplicatedSprite = nullptr;
+    }
 
     bool operator ==(const Sprite& other) {
-        return this->path.compare(other.path, Qt::CaseInsensitive) == 0;
+        return this->hash == other.hash;
     }
-};
-
-typedef QSharedPointer<Sprite> SpritePtr;
-
-struct InputImage
-{
-    quint32 hash;
-    int textureId;
-    SpritePtr id;
-    SpritePtr duplicateId;
-    QPoint pos;
-    QSize size, sizeCurrent;
-    QRect crop;
-    QString path;
-
-    bool cropped, rotated;
 };
 
 enum {
@@ -100,8 +105,42 @@ struct Configurations {
 
     Configurations() {
         isRecursive = true;
+        sortOrder = SORT_MAX;
+        heuristic = HEURISTIC_TL;
+        extrude = 1;
+        merge = true;
+        square = false;
+        autosize = true;
+        minFillRate = 80;
+        mergeBF = false;
+        rotate = ROTATION_ONLY_WHEN_NEEDED;
+        cropThreshold = 10;
+        minTextureSizeX = 32;
+        minTextureSizeY = 32;
+
+        atlasHeight = 512;
+        atlasWidth = 512;
     }
+
+    int atlasWidth;
+    int atlasHeight;
+
+    int sortOrder;
+    Border border;
+    int heuristic;
+    int extrude;
+    bool merge;
+    bool square;
+    bool autosize;
+    int minFillRate;
+    bool mergeBF;
+    int rotate;
+    int cropThreshold;
+    int minTextureSizeX;
+    int minTextureSizeY;
 };
+
+typedef QSharedPointer<Configurations> ConfigurationsPtr;
 
 }
 

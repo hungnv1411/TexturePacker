@@ -11,131 +11,67 @@
 
 namespace packer {
 
-ImagePacker::ImagePacker()
-{
-    prevSortOrder = -1;
-    extrude = 1;
-    cropThreshold = 10;
-    minTextureSizeX = 32;
-    minTextureSizeY = 32;
+ImagePacker::ImagePacker() {
+
 }
 
-void ImagePacker::pack(int heur, int w, int h)
+bool ImagePacker::pack(ConfigurationsPtr& configs)
 {
-    SortImages(w, h);
+    this->configs = configs;
+    if (configs == nullptr) return false;
+
+    sortImages();
 
     missingImages = 1;
     mergedImages = 0;
     area = 0;
     bins.clear();
 
-    unsigned areaBuf = AddImgesToBins(heur, w, h);
+    unsigned areaBuf = addImgesToBins();
 
-    if(areaBuf && !missingImages)
-    {
-        CropLastImage(heur, w, h, false);
+    if (areaBuf && !missingImages) {
+        cropLastImage(false);
     }
 
-    if(merge)
-        for(int i = 0; i < images.size(); i++)
-            if(images.at(i).duplicateId != NULL)
+    if (configs->merge) {
+        for(int i = 0; i < sprites.size(); i++) {
+            if(sprites.at(i)->duplicatedSprite != nullptr)
             {
-                images.operator [](i).pos = find(images.at(i).duplicateId)->pos;
-                images.operator [](i).textureId = find(images.at(i).duplicateId)->textureId;
+                sprites[i]->pos = find(sprites.at(i)->duplicatedSprite)->pos;
+                sprites[i]->textureId = find(sprites.at(i)->duplicatedSprite)->textureId;
                 mergedImages++;
             }
-}
-
-quint32 rc_crc32(quint32 crc, const uchar *buf, size_t len)
-{
-    static quint32 table[256];
-    static int have_table = 0;
-    quint32 rem, octet;
-    const uchar *p, *q;
-
-    /* This check is not thread safe; there is no mutex. */
-    if(have_table == 0)
-    {
-        /* Calculate CRC table. */
-        for(int i = 0; i < 256; i++)
-        {
-            rem = i;  /* remainder from polynomial division */
-            for(int j = 0; j < 8; j++)
-            {
-                if(rem & 1)
-                {
-                    rem >>= 1;
-                    rem ^= 0xedb88320;
-                }
-                else
-                {
-                    rem >>= 1;
-                }
-            }
-            table[i] = rem;
         }
-        have_table = 1;
-    }
-
-    crc = ~crc;
-    q = buf + len;
-    for(p = buf; p < q; p++)
-    {
-        octet = *p;  /* Cast to unsigned octet. */
-        crc = (crc >> 8) ^ table[(crc & 0xff) ^ octet];
-    }
-    return ~crc;
-}
-
-void ImagePacker::UpdateCrop()
-{
-    for(int i = 0; i < images.size(); ++i)
-    {
-        images[i].crop = crop(QImage(images[i].path));
     }
 }
 
-void ImagePacker::addItem(const QImage &img, const SpritePtr& data, QString path)
-{
-    InputImage i;
-    if(img.width() == 0 || img.height() == 0)
-    {
-        return;
+void ImagePacker::updateCrop() {
+    for(int i = 0; i < sprites.size(); ++i) {
+        sprites[i]->crop = crop(QImage(sprites[i]->path));
     }
-    i.hash = rc_crc32(0, img.bits(), img.byteCount());
-    i.crop = crop(img);
-    i.size = img.size();
-    i.id = data;
-    i.path = path;
-    images << i;
-}
-
-void ImagePacker::addItem(QString path, const SpritePtr& data)
-{
-    addItem(QImage(path), data, path);
 }
 
 void ImagePacker::clear()
 {
-    images.clear();
+    sprites.clear();
 }
 
 void ImagePacker::realculateDuplicates()
 {
-    for(int i = 0; i < images.count(); i++)
+    for(int i = 0; i < sprites.count(); i++)
     {
-        images.operator [](i).duplicateId = NULL;
+        sprites[i]->duplicatedSprite = NULL;
     }
-    for(int i = 0; i < images.count(); i++)
+    for(int i = 0; i < sprites.count(); i++)
     {
-        for(int k = i + 1; k < images.count(); k++)
+        for(int k = i + 1; k < sprites.count(); k++)
         {
-            if(images.at(k).duplicateId == NULL &&
-                    images.at(i).hash == images.at(k).hash &&
-                    images.at(i).size == images.at(k).size &&
-                    images.at(i).crop == images.at(k).crop)
+            if(sprites.at(k)->duplicatedSprite == NULL &&
+                    sprites.at(i)->hash == sprites.at(k)->hash &&
+                    sprites.at(i)->size == sprites.at(k)->size &&
+                    sprites.at(i)->crop == sprites.at(k)->crop)
             {
-                images.operator [](k).duplicateId = images.at(i).id;
+                sprites[k]->duplicatedSprite = sprites.at(i);
             }
         }
     }
@@ -143,69 +79,71 @@ void ImagePacker::realculateDuplicates()
 
 void ImagePacker::removeId(const SpritePtr& data)
 {
-    for(int k = 0; k < images.count(); k++)
+    for(int k = 0; k < sprites.count(); k++)
     {
-        if(images.at(k).id == data)
+        if(sprites.at(k) == data)
         {
-            images.removeAt(k);
+            sprites.removeAt(k);
             break;
         }
     }
 }
-const InputImage *ImagePacker::find(const SpritePtr& data)
+const SpritePtr ImagePacker::find(const SpritePtr& data)
 {
-    for(int i = 0; i < images.count(); i++)
+    for(int i = 0; i < sprites.count(); i++)
     {
-        if(data == images.at(i).id)
+        if(data == sprites.at(i))
         {
-            return &images.at(i);
+            return sprites.at(i);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
-void ImagePacker::SortImages(int w, int h)
+void ImagePacker::sortImages()
 {
     realculateDuplicates();
     neededArea = 0;
+    int w = configs->atlasWidth;
+    int h = configs->atlasHeight;
     QSize size;
-    for(int i = 0; i < images.size(); i++)
+    for(int i = 0; i < sprites.size(); i++)
     {
-        images.operator [](i).pos = QPoint(999999, 999999);
-        if(cropThreshold)
+        sprites.at(i)->pos = QPoint(999999, 999999);
+        if(configs->cropThreshold)
         {
-            size = images.at(i).crop.size();
+            size = sprites.at(i)->crop.size();
         }
         else
         {
-            size = images.at(i).size;
+            size = sprites.at(i)->size;
         }
         if(size.width() == w)
         {
-            size.setWidth(size.width() - border.left - border.right - 2 * extrude);
+            size.setWidth(size.width() - configs->border.left - configs->border.right - 2 * configs->extrude);
         }
         if(size.height() == h)
         {
-            size.setHeight(size.height() - border.top - border.bottom - 2 * extrude);
+            size.setHeight(size.height() - configs->border.top - configs->border.bottom - 2 * configs->extrude);
         }
-        size += QSize(border.left + border.right + 2 * extrude,
-                      border.top + border.bottom + 2 * extrude);
+        size += QSize(configs->border.left + configs->border.right + 2 * configs->extrude,
+                      configs->border.top + configs->border.bottom + 2 * configs->extrude);
 
-        images.operator [](i).rotated = false;
-        if((rotate == ROTATION_WIDTH_GREATHER_HEIGHT && size.width() > size.height()) ||
-                (rotate == ROTATION_WIDTH_GREATHER_2HEIGHT && size.width() > 2 * size.height()) ||
-                (rotate == ROTATION_HEIGHT_GREATHER_WIDTH && size.height() > size.width()) ||
-                (rotate == ROTATION_H2_WIDTH_H && size.height() > size.width() &&
+        sprites[i]->rotated = false;
+        if((configs->rotate == ROTATION_WIDTH_GREATHER_HEIGHT && size.width() > size.height()) ||
+                (configs->rotate == ROTATION_WIDTH_GREATHER_2HEIGHT && size.width() > 2 * size.height()) ||
+                (configs->rotate == ROTATION_HEIGHT_GREATHER_WIDTH && size.height() > size.width()) ||
+                (configs->rotate == ROTATION_H2_WIDTH_H && size.height() > size.width() &&
                  size.width() * 2 > size.height()) ||
-                (rotate == ROTATION_W2_HEIGHT_W && size.width() > size.height() &&
+                (configs->rotate == ROTATION_W2_HEIGHT_W && size.width() > size.height() &&
                  size.height() * 2 > size.width()) ||
-                (rotate == ROTATION_HEIGHT_GREATHER_2WIDTH && size.height() > 2 * size.width()))
+                (configs->rotate == ROTATION_HEIGHT_GREATHER_2WIDTH && size.height() > 2 * size.width()))
         {
             size.transpose();
-            images.operator [](i).rotated = true;
+            sprites.at(i)->rotated = true;
         }
-        images.operator [](i).sizeCurrent = size;
-        if(images.at(i).duplicateId == NULL || !merge)
+        sprites.at(i)->sizeCurrent = size;
+        if(sprites.at(i)->duplicatedSprite == nullptr || !configs->merge)
         {
             neededArea += size.width() * size.height();
         }
@@ -213,8 +151,12 @@ void ImagePacker::SortImages(int w, int h)
     sort();
 }
 
-int ImagePacker::FillBin(int heur, int w, int h, int binIndex)
+int ImagePacker::fillBin(int binIndex)
 {
+    int w = configs->atlasWidth;
+    int h = configs->atlasHeight;
+    int heur = configs->heuristic;
+
     int areaBuf = 0;
     MaxRects rects;
     MaxRectsNode mrn;
@@ -224,46 +166,49 @@ int ImagePacker::FillBin(int heur, int w, int h, int binIndex)
     rects.leftToRight = ltr;
     rects.w = w;
     rects.h = h;
-    rects.rotation = rotate;
-    rects.border = &border;
-    for(int i = 0; i < images.size(); i++)
+    rects.rotation = configs->rotate;
+    rects.border = &configs->border;
+    for(int i = 0; i < sprites.size(); i++)
     {
-        if(QPoint(999999, 999999) != images.at(i).pos)
+        if(QPoint(999999, 999999) != sprites.at(i)->pos)
         {
             continue;
         }
-        if(images.at(i).duplicateId == NULL || !merge)
+        if(sprites.at(i)->duplicatedSprite == nullptr || !configs->merge)
         {
-            images.operator [](i).pos = rects.insertNode(&images.operator [](i));
-            images.operator [](i).textureId = binIndex;
-            if(QPoint(999999, 999999) == images.at(i).pos)
+            sprites[i]->pos = rects.insertNode(sprites[i]);
+            sprites[i]->textureId = binIndex;
+            if(QPoint(999999, 999999) == sprites.at(i)->pos)
             {
                 missingImages++;
             }
             else
             {
-                areaBuf += images.at(i).sizeCurrent.width() * images.at(i).sizeCurrent.height();
-                area += images.at(i).sizeCurrent.width() * images.at(i).sizeCurrent.height();
+                areaBuf += sprites.at(i)->sizeCurrent.width() * sprites.at(i)->sizeCurrent.height();
+                area += sprites.at(i)->sizeCurrent.width() * sprites.at(i)->sizeCurrent.height();
             }
         }
     }
     return areaBuf;
 }
 
-void ImagePacker::ClearBin(int binIndex)
+void ImagePacker::clearBin(int binIndex)
 {
-    for(int i = 0; i < images.size(); i++)
+    for(int i = 0; i < sprites.size(); i++)
     {
-        if(images.at(i).textureId == binIndex)
+        if(sprites.at(i)->textureId == binIndex)
         {
-            area -= images.at(i).sizeCurrent.width() * images.at(i).sizeCurrent.height();
-            images.operator [](i).pos = QPoint(999999, 999999);
+            area -= sprites.at(i)->sizeCurrent.width() * sprites.at(i)->sizeCurrent.height();
+            sprites.at(i)->pos = QPoint(999999, 999999);
         }
     }
 }
 
-unsigned ImagePacker::AddImgesToBins(int heur, int w, int h)
+unsigned ImagePacker::addImgesToBins()
 {
+    int w = configs->atlasWidth;
+    int h = configs->atlasHeight;
+
     int binIndex = bins.count() - 1;
     unsigned areaBuf = 0;
     unsigned lastAreaBuf = 0;
@@ -271,7 +216,7 @@ unsigned ImagePacker::AddImgesToBins(int heur, int w, int h)
     {
         missingImages = 0;
         bins << QSize(w, h);
-        lastAreaBuf = FillBin(heur, w , h , ++binIndex);
+        lastAreaBuf = fillBin(++binIndex);
         if(!lastAreaBuf)
         {
             bins.removeLast();
@@ -282,29 +227,26 @@ unsigned ImagePacker::AddImgesToBins(int heur, int w, int h)
     return areaBuf;
 }
 
-void ImagePacker::CropLastImage(int heur, int w, int h, bool wh)
-{
+void ImagePacker::cropLastImage(bool wh) {
+    int w = configs->atlasWidth;
+    int h = configs->atlasHeight;
+    int heur = configs->heuristic;
+
     missingImages = 0;
-    QList<InputImage> last_images = images;
+    QList<SpritePtr> last_images = sprites;
     QList<QSize> last_bins = bins;
     quint64 last_area = area;
 
     bins.removeLast();
-    ClearBin(bins.count());
+    clearBin(bins.count());
 
-    if(square)
-    {
+    if(configs->square) {
         w /= 2;
         h /= 2;
-    }
-    else
-    {
-        if(wh)
-        {
+    } else {
+        if(wh) {
             w /= 2;
-        }
-        else
-        {
+        } else {
             h /= 2;
         }
         wh = !wh;
@@ -313,94 +255,79 @@ void ImagePacker::CropLastImage(int heur, int w, int h, bool wh)
     int binIndex = bins.count();
     missingImages = 0;
     bins << QSize(w, h);
-    FillBin(heur, w , h , binIndex);
-    if(missingImages)
-    {
-        images = last_images;
+    fillBin(binIndex);
+    if(missingImages) {
+        sprites = last_images;
         bins = last_bins;
         area = last_area;
         missingImages = 0;
-        if(square)
-        {
+        if(configs->square) {
             w *= 2;
             h *= 2;
-        }
-        else
-        {
-            if(!wh)
-            {
+        } else {
+            if(!wh) {
                 w *= 2;
-            }
-            else
-            {
+            } else {
                 h *= 2;
             }
             wh = !wh;
         }
-        if(autosize)
+        if(configs->autosize)
         {
-            float rate = GetFillRate();
-            if((rate < (static_cast<float>(minFillRate) / 100.f)) &&
-                    ((w > minTextureSizeX) && (h > minTextureSizeY)))
+            float rate = getFillRate();
+            if((rate < (static_cast<float>(configs->minFillRate) / 100.f)) && ((w > configs->minTextureSizeX) && (h > configs->minTextureSizeY)))
             {
-                DivideLastImage(heur, w, h, wh);
-                if(GetFillRate() <= rate)
+                divideLastImage(wh);
+                if(getFillRate() <= rate)
                 {
-                    images = last_images;
+                    sprites = last_images;
                     bins = last_bins;
                     area = last_area;
                 }
             }
         }
-    }
-    else
-    {
-        CropLastImage(heur, w, h, wh);
+    } else {
+        cropLastImage(wh);
     }
 }
 
-void ImagePacker::DivideLastImage(int heur, int w, int h, bool wh)
+void ImagePacker::divideLastImage(bool wh)
 {
+    int w = configs->atlasWidth;
+    int h = configs->atlasHeight;
+    int heur = configs->heuristic;
+
     missingImages = 0;
-    QList<InputImage> last_images = images;
+    QList<SpritePtr> last_images = sprites;
     QList<QSize> last_bins = bins;
     quint64 last_area = area;
 
     bins.removeLast();
-    ClearBin(bins.count());
+    clearBin(bins.count());
 
-    if(square)
-    {
+    if(configs->square) {
         w /= 2;
         h /= 2;
-    }
-    else
-    {
-        if(wh)
-        {
+    } else {
+        if(wh) {
             w /= 2;
-        }
-        else
-        {
+        } else {
             h /= 2;
         }
         wh = !wh;
     }
-    AddImgesToBins(heur, w, h);
-    if(missingImages)
-    {
-        images = last_images;
+    addImgesToBins();
+    if(missingImages){
+        sprites = last_images;
         bins = last_bins;
         area = last_area;
         missingImages = 0;
-    }
-    else
-    {
-        CropLastImage(heur, w, h, wh);
+    } else {
+        cropLastImage(wh);
     }
 }
 
-float ImagePacker::GetFillRate()
+float ImagePacker::getFillRate()
 {
     quint64 binArea = 0;
     for(int i = 0; i < bins.count(); i++)
@@ -415,12 +342,10 @@ QRect ImagePacker::crop(const QImage &img)
 {
     int j, w, h, x, y;
     QRgb pix;
-    //QImage im;
     bool t;
     //crop all
     if(false)
     {
-        //    qDebug("%d", img->depth());
         QHash<QRgb, int> hash;
         hash[img.pixel(0, 0)]++;
         hash[img.pixel(img.width() - 1, 0)]++;
@@ -430,12 +355,9 @@ QRect ImagePacker::crop(const QImage &img)
         while(i.hasNext())
         {
             i.next();
-            //        qDebug("%d %d %d %d - %d", qRed(i.key()), qGreen(i.key()), qBlue(i.key()), qAlpha(i.key()), i.value());
             if(i.value() > 2)
             {
                 pix = i.key();
-                //            qDebug("%d %d %d %d - %d", qRed(i.key()), qGreen(i.key()), qBlue(i.key()), qAlpha(i.key()), i.value());
-                //~ if(qAlpha(pix) == 0) break;
                 t = true;
                 for(y = 0; y < img.height(); y++)
                 {
@@ -469,25 +391,25 @@ QRect ImagePacker::crop(const QImage &img)
     for(y = 0; y < img.height(); y++)
     {
         for(j = 0; j < img.width(); j++)
-            CMP(j, y, cropThreshold)
+            CMP(j, y, configs->cropThreshold)
         }
     t = true;
     for(x = 0; x < img.width(); x++)
     {
         for(j = y; j < img.height(); j++)
-            CMP(x, j, cropThreshold)
+            CMP(x, j, configs->cropThreshold)
         }
     t = true;
     for(w = img.width(); w > 0; w--)
     {
         for(j = y; j < img.height(); j++)
-            CMP(w - 1, j, cropThreshold)
+            CMP(w - 1, j, configs->cropThreshold)
         }
     t = true;
     for(h = img.height(); h > 0; h--)
     {
         for(j = x; j < w; j++)
-            CMP(j, h - 1, cropThreshold)
+            CMP(j, h - 1, configs->cropThreshold)
         }
 found_by_color:
     w = w - x;
@@ -503,28 +425,28 @@ found_by_color:
     return QRect(x, y, w, h);
 }
 
-bool ImageCompareByHeight(const InputImage &i1, const InputImage &i2)
+bool ImageCompareByHeight(const SpritePtr &i1, const SpritePtr &i2)
 {
-    return (i1.sizeCurrent.height() << 10) + i1.sizeCurrent.width() >
-           (i2.sizeCurrent.height() << 10) + i2.sizeCurrent.width();
+    return (i1->sizeCurrent.height() << 10) + i1->sizeCurrent.width() >
+           (i2->sizeCurrent.height() << 10) + i2->sizeCurrent.width();
 }
-bool ImageCompareByWidth(const InputImage &i1, const InputImage &i2)
+bool ImageCompareByWidth(const SpritePtr &i1, const SpritePtr &i2)
 {
-    return (i1.sizeCurrent.width() << 10) + i1.sizeCurrent.height() >
-           (i2.sizeCurrent.width() << 10) + i2.sizeCurrent.height();
+    return (i1->sizeCurrent.width() << 10) + i1->sizeCurrent.height() >
+           (i2->sizeCurrent.width() << 10) + i2->sizeCurrent.height();
 }
-bool ImageCompareByArea(const InputImage &i1, const InputImage &i2)
+bool ImageCompareByArea(const SpritePtr &i1, const SpritePtr &i2)
 {
-    return i1.sizeCurrent.height() * i1.sizeCurrent.width() >
-           i2.sizeCurrent.height() * i2.sizeCurrent.width();
+    return i1->sizeCurrent.height() * i1->sizeCurrent.width() >
+           i2->sizeCurrent.height() * i2->sizeCurrent.width();
 }
 
-bool ImageCompareByMax(const InputImage &i1, const InputImage &i2)
+bool ImageCompareByMax(const SpritePtr &i1, const SpritePtr &i2)
 {
-    int first = i1.sizeCurrent.height() > i1.sizeCurrent.width() ?
-                i1.sizeCurrent.height() : i1.sizeCurrent.width();
-    int second = i2.sizeCurrent.height() > i2.sizeCurrent.width() ?
-                 i2.sizeCurrent.height() : i2.sizeCurrent.width();
+    int first = i1->sizeCurrent.height() > i1->sizeCurrent.width() ?
+                i1->sizeCurrent.height() : i1->sizeCurrent.width();
+    int second = i2->sizeCurrent.height() > i2->sizeCurrent.width() ?
+                 i2->sizeCurrent.height() : i2->sizeCurrent.width();
     if(first == second)
     {
         return ImageCompareByArea(i1, i2);
@@ -537,19 +459,19 @@ bool ImageCompareByMax(const InputImage &i1, const InputImage &i2)
 
 void ImagePacker::sort()
 {
-    switch(sortOrder)
+    switch(configs->sortOrder)
     {
     case 1:
-        qSort(images.begin(), images.end(), ImageCompareByWidth);
+        qSort(sprites.begin(), sprites.end(), ImageCompareByWidth);
         break;
     case 2:
-        qSort(images.begin(), images.end(), ImageCompareByHeight);
+        qSort(sprites.begin(), sprites.end(), ImageCompareByHeight);
         break;
     case 3:
-        qSort(images.begin(), images.end(), ImageCompareByArea);
+        qSort(sprites.begin(), sprites.end(), ImageCompareByArea);
         break;
     case 4:
-        qSort(images.begin(), images.end(), ImageCompareByMax);
+        qSort(sprites.begin(), sprites.end(), ImageCompareByMax);
         break;
     }
 }

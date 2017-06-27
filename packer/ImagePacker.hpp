@@ -7,37 +7,38 @@ namespace packer {
 
 class ImagePacker
 {
-private:
-    int prevSortOrder;
-    void internalPack(int heur, int w, int h);
+public:
+    ImagePacker();
 
-    void SortImages(int w, int h);
+    void addSprite(const SpritePtr& sprite) {
+        sprites.append(sprite);
+    }
+
+    void addSprites(const QList<SpritePtr>& sprites) {
+        this->sprites.append(sprites);
+    }
+
+    bool pack(ConfigurationsPtr& configs);
+
+private:
+    void internalPack(int heur, int w, int h);
+    void sortImages();
 
 public:
-    QList<InputImage> images;
+    QList<SpritePtr> sprites;
     QList<QSize> bins;
-    ImagePacker();
-    bool compareImages(QImage *img1, QImage *img2, int *i, int *j);
-    void pack(int heur, int w, int h);
 
-    unsigned AddImgesToBins(int heur, int w, int h);
-
-    void CropLastImage(int heur, int w, int h, bool wh);
-    void DivideLastImage(int heur, int w, int h, bool wh);
-
-    void UpdateCrop();
-
-    float GetFillRate();
-
-    void ClearBin(int binIndex);
-
-    int FillBin(int heur, int w, int h, int binIndex);
+    unsigned addImgesToBins();
+    void cropLastImage(bool wh);
+    void divideLastImage(bool wh);
+    void updateCrop();
+    float getFillRate();
+    void clearBin(int binIndex);
+    int fillBin(int binIndex);
 
     QRect crop(const QImage& img);
     void sort();
-    void addItem(const QImage& img, const SpritePtr& data, QString path);
-    void addItem(QString path, const SpritePtr& data);
-    const InputImage* find(const SpritePtr& data);
+    const SpritePtr find(const SpritePtr& data);
     void removeId(const SpritePtr& data);
     void realculateDuplicates();
     void clear();
@@ -45,15 +46,10 @@ public:
     quint64 area, neededArea;
     int missingImages;
     int mergedImages;
-    bool ltr, merge, square, autosize, mergeBF;
-    int cropThreshold;
-    Border border;
-    int extrude;
-    int rotate;
-    int sortOrder;
-    int minFillRate;
-    int minTextureSizeX;
-    int minTextureSizeY;
+    bool ltr;
+
+private:
+    ConfigurationsPtr configs;
 };
 
 }
