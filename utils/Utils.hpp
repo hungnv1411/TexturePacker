@@ -11,6 +11,10 @@ public:
     static QString getFileExtension(const QString& filePath);
     static QStringList enumerateContentInDirectory(const QString& directory, bool recursive = false);
 
+    static quint32 hash(quint32 crc, const uchar *buf, size_t len);
+
+    static QRect crop(const QImage& img, int cropThreshold);
+
 public:
     static QStringList supportedImageFormats;
     static QStringList supportedImageFormatFilters;

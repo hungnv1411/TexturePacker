@@ -8,13 +8,11 @@ MaxRects::MaxRects()
 
 }
 
-QPoint MaxRects::insertNode(InputImage *input)
+QPoint MaxRects::insertNode(Sprite& input)
 {
     int i;
     int min = 999999999, mini = -1, m;
-    QSize img = input->sizeCurrent;
-    //    if(img.width() == w) img.setWidth(img.width() - border->l - border->r);
-    //    if(img.height() == h) img.setHeight(img.height() - border->t - border->b);
+    QSize img = input.sizeCurrent;
     if(img.width() == 0 || img.height() == 0)
     {
         return QPoint(0, 0);
@@ -36,8 +34,6 @@ QPoint MaxRects::insertNode(InputImage *input)
                 {
                     continue;
                 }
-                //                input->rotated = !input->rotated;
-                //                input->sizeCurrent.transpose();
                 img.transpose();
                 rotated = true;
                 m += img.height();
@@ -115,8 +111,8 @@ QPoint MaxRects::insertNode(InputImage *input)
     if(bestIsRotated)
     {
         img.transpose();
-        input->rotated = !input->rotated;
-        input->sizeCurrent.transpose();
+        input.rotated = !input.rotated;
+        input.sizeCurrent.transpose();
     }
     if(mini >= 0)
     {

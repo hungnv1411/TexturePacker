@@ -6,11 +6,21 @@ AtlasTextureView::AtlasTextureView(QWidget *parent) : QWidget(parent)
 {
     scale = 1;
     size = QSize(0, 0);
+
+    pattern = QPixmap(20, 20);
+    QPainter painter(&pattern);
+#define BRIGHT 190
+#define SHADOW 150
+    painter.fillRect(0, 0, 10, 10, QColor(SHADOW, SHADOW, SHADOW));
+    painter.fillRect(10, 0, 10, 10, QColor(BRIGHT, BRIGHT, BRIGHT));
+    painter.fillRect(10, 10, 10, 10, QColor(SHADOW, SHADOW, SHADOW));
+    painter.fillRect(0, 10, 10, 10, QColor(BRIGHT, BRIGHT, BRIGHT));
 }
 
 void AtlasTextureView::paintEvent(QPaintEvent * /* event */)
 {
     QPainter painter(this);
+//    painter.drawTiledPixmap(this->geometry(), pattern);
     int minHeight = 0;
     for(int i = 0; i < textures.count(); i++)
     {
@@ -20,10 +30,9 @@ void AtlasTextureView::paintEvent(QPaintEvent * /* event */)
     int pos = 0;
     for(int i = 0; i < textures.count(); i++)
     {
-        painter.fillRect(0, pos, textures.at(i).width()*scale,
-                         textures.at(i).height()*scale, Qt::magenta);
-        painter.drawPixmap(0, pos, textures.at(i).width()*scale,
-                           textures.at(i).height()*scale, textures.at(i));
+//        painter.fillRect(0, pos, textures.at(i).width()*scale, textures.at(i).height()*scale, Qt::magenta);
+        painter.fillRect(0, pos, textures.at(i).width()*scale, textures.at(i).height()*scale, pattern);
+        painter.drawPixmap(0, pos, textures.at(i).width()*scale, textures.at(i).height()*scale, textures.at(i));
         pos += (textures.at(i).height() + 10) * scale;
     }
 }
@@ -42,8 +51,7 @@ void AtlasTextureView::updatePixmap(const QList<QImage> &images)
         }
         textures << texture;
     }
-    this->setMinimumSize(size.width()*scale,
-                         (size.height() + 10)*images.count()*scale);
+    this->setMinimumSize(size.width()*scale, (size.height() + 10)*images.count()*scale);
     update();
 }
 

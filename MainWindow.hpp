@@ -37,6 +37,7 @@ private:
     // packer
 private:
     void loadFiles(const QStringList& filePaths);
+    void loadDirectory(const QString& directory);
 protected:
     void closeEvent(QCloseEvent *event) override;
 
@@ -46,6 +47,7 @@ protected slots:
     void onAddSprites();
     void onAddSmartFolder();
     void removeSelectedSprites();
+    void onPublishSpriteSheet();
     void spriteItemClicked(QTreeWidgetItem *item, int column);
 
 private:
@@ -63,6 +65,7 @@ private:
     QAction* addSpriteAction;
     QAction* addSmartFolderAction;
     QAction* removeSpriteAction;
+    QAction* publishAction;
     QAction* aboutAction;
     // toolbar
     QToolBar* fileToolbar;
@@ -79,10 +82,7 @@ private:
 
 private:
     TPProject projectLoader;
-    QList<packer::SpritePtr> sprites;
     packer::ImagePacker imagePacker;
-
-    QPixmap pattern;
 };
 
 #endif // MAINWINDOW_HPP

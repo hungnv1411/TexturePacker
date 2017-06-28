@@ -14,6 +14,7 @@ private:
     QList<QPixmap> textures;
     float scale;
     QSize size;
+    QPixmap pattern;
 public slots:
     void updatePixmap(const QList<QImage> &image);
     void rescale(QString);
