@@ -8,6 +8,7 @@ class Utils
 public:
     static bool isImage(const QString& filePath);
     static QString getFileName(const QString& filePath);
+    static QString getContainingDirectory(const QString& filePath);
     static QString getFileExtension(const QString& filePath);
     static QStringList enumerateContentInDirectory(const QString& directory, bool recursive = false);
 

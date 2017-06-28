@@ -20,6 +20,10 @@ public:
 
     bool pack(ConfigurationsPtr& configs);
 
+    ConfigurationsPtr& getConfigurations() {
+        return configs;
+    }
+
 private:
     void sortImages(int w, int h);
 
@@ -49,6 +53,8 @@ public:
 private:
     ConfigurationsPtr configs;
 };
+
+typedef QSharedPointer<ImagePacker> ImagePackerPtr;
 
 }
 

@@ -35,7 +35,9 @@ SOURCES += \
     views/TextureSettingView.cpp \
     views/SpriteSettingView.cpp \
     views/SettingPanel.cpp \
-    AtlasTextureView.cpp
+    AtlasTextureView.cpp \
+    exporter/Exporter.cpp \
+    exporter/CocosExporter.cpp
 
 HEADERS += \
         MainWindow.hpp \
@@ -49,7 +51,9 @@ HEADERS += \
     views/TextureSettingView.hpp \
     views/SpriteSettingView.hpp \
     views/SettingPanel.hpp \
-    AtlasTextureView.hpp
+    AtlasTextureView.hpp \
+    exporter/Exporter.hpp \
+    exporter/CocosExporter.hpp
 
 RESOURCES += \
     Resources.qrc

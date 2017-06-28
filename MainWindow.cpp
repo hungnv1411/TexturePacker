@@ -21,6 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("TexturePacker"));
 
     readSettings();
+
+    imagePacker = packer::ImagePackerPtr(new packer::ImagePacker);
+    atlasExporter = exporter::ExporterPtr(new exporter::CocosExporter);
 }
 
 MainWindow::~MainWindow()
@@ -320,8 +323,8 @@ void MainWindow::loadDirectory(const QString& directory) {
         QStringList filePaths = Utils::enumerateContentInDirectory(directory, configs->isRecursive);
         for (int i = 0; i < filePaths.size(); ++i) {
             QString path = filePaths[i];
-            Sprite s(path);
-            imagePacker.addSprite(s);
+            packer::Sprite s(path);
+            imagePacker->addSprite(s);
 
             QTreeWidgetItem* item = new QTreeWidgetItem(rootItem, QStringList(Utils::getFileName(path)));
             item->setIcon(0, QIcon(path));
@@ -342,8 +345,8 @@ void MainWindow::loadFiles(const QStringList &filePaths) {
         QString path = filePaths[i];
         if (!configs->files.contains(path)) {
             configs->files.append(path);
-            Sprite s(path);
-            imagePacker.addSprite(s);
+            packer::Sprite s(path);
+            imagePacker->addSprite(s);
 
             QTreeWidgetItem* item = new QTreeWidgetItem(addedSpritesTreeWidget, QStringList(Utils::getFileName(path)));
             item->setIcon(0, QIcon(path));
@@ -371,275 +374,151 @@ void MainWindow::removeSelectedSprites() {
     updateSpriteSheet();
 }
 
-void MainWindow::updateSpriteSheet(bool exporting) {
-    int i;
+void MainWindow::updateSpriteSheet() {
     quint64 area = 0;
-    QString outDir = "/Data/GitHub";
-    QString outFile = "atlas";
-    QString outFormat = "png";
-    bool previewWithImages = true;
 
-    ConfigurationsPtr& configs = projectLoader.getConfigurations();
-    imagePacker.pack(configs);
+    packer::ConfigurationsPtr& configs = projectLoader.getConfigurations();
+    imagePacker->pack(configs);
 
     QList<QImage> textures;
-    for(i = 0; i < imagePacker.bins.size(); i++)
+    for(int i = 0; i < imagePacker->bins.size(); i++)
     {
-        QImage texture(imagePacker.bins.at(i).width(), imagePacker.bins.at(i).height(),
-                       QImage::Format_ARGB32);
+        QImage texture(imagePacker->bins.at(i).width(), imagePacker->bins.at(i).height(), QImage::Format_ARGB32);
         texture.fill(Qt::transparent);
         textures << texture;
     }
-    if(exporting)
+    for(int i = 0; i < imagePacker->sprites.size(); i++)
     {
-        for(int j = 0; j < textures.count(); j++)
-        {
-            QString outputFile = outDir;
-            outputFile += QDir::separator();
-            outputFile += outFile;
-            if(textures.count() > 1)
-            {
-                outputFile += QString("_") + QString::number(j + 1);
-            }
-            outputFile += ".atlas";
-            QString imgFile = outFile;
-            if(textures.count() > 1)
-            {
-                imgFile += QString("_") + QString::number(j + 1);
-            }
-            imgFile += ".";
-            imgFile += outFormat.toLower();
-
-            QFile positionsFile(outputFile);
-            if(!positionsFile.open(QIODevice::WriteOnly | QIODevice::Text))
-            {
-                QMessageBox::critical(0, tr("Error"), tr("Cannot create file ") + outputFile);
-            }
-            else
-            {
-                QTextStream out(&positionsFile);
-                out << "textures: " << imgFile << "\n";
-                for(i = 0; i < imagePacker.sprites.size(); i++)
-                {
-                    if(imagePacker.sprites.at(i).textureId != j)
-                    {
-                        continue;
-                    }
-                    QPoint pos(imagePacker.sprites.at(i).pos.x() + configs->border.left + configs->extrude,
-                               imagePacker.sprites.at(i).pos.y() + configs->border.top + configs->extrude);
-                    QSize size, sizeOrig;
-                    QRect crop;
-                    sizeOrig = imagePacker.sprites.at(i).size;
-                    if(!configs->cropThreshold)
-                    {
-                        size = imagePacker.sprites.at(i).size;
-                        crop = QRect(0, 0, size.width(), size.height());
-                    }
-                    else
-                    {
-                        size = imagePacker.sprites.at(i).crop.size();
-                        crop = imagePacker.sprites.at(i).crop;
-                    }
-                    if(imagePacker.sprites.at(i).rotated)
-                    {
-                        size.transpose();
-                        crop = QRect(crop.y(), crop.x(), crop.height(), crop.width());
-                    }
-                    out << Utils::getFileName(imagePacker.sprites[i].path)
-                        <<
-                        "\t" <<
-                        pos.x() << "\t" <<
-                        pos.y() << "\t" <<
-                        crop.width() << "\t" <<
-                        crop.height() << "\t" <<
-                        crop.x() << "\t" <<
-                        crop.y() << "\t" <<
-                        sizeOrig.width() << "\t" <<
-                        sizeOrig.height() << "\t" <<
-                        (imagePacker.sprites.at(i).rotated ? "r" : "") << "\n";
-                }
-            }
-        }
-    }
-    for(i = 0; i < imagePacker.sprites.size(); i++)
-    {
-        if(imagePacker.sprites.at(i).pos == QPoint(999999, 999999))
+        if(imagePacker->sprites.at(i).pos == QPoint(999999, 999999))
         {
             continue;
         }
-        if(imagePacker.sprites.at(i).duplicatedSprite != NULL && configs->merge)
+        if(imagePacker->sprites.at(i).duplicatedSprite != NULL && configs->merge)
         {
             continue;
         }
-        QPoint pos(imagePacker.sprites.at(i).pos.x() + configs->border.left,
-                   imagePacker.sprites.at(i).pos.y() + configs->border.top);
+        QPoint pos(imagePacker->sprites.at(i).pos.x() + configs->border.left, imagePacker->sprites.at(i).pos.y() + configs->border.top);
         QSize size;
         QRect crop;
         if(!configs->cropThreshold)
         {
-            size = imagePacker.sprites.at(i).size;
+            size = imagePacker->sprites.at(i).size;
             crop = QRect(0, 0, size.width(), size.height());
         }
         else
         {
-            size = imagePacker.sprites.at(i).crop.size();
-            crop = imagePacker.sprites.at(i).crop;
+            size = imagePacker->sprites.at(i).crop.size();
+            crop = imagePacker->sprites.at(i).crop;
         }
-        QImage img;
-        if((exporting || previewWithImages))
-        {
-            img = imagePacker.sprites[i].texture;
-        }
-        if(imagePacker.sprites.at(i).rotated)
+        QImage img = imagePacker->sprites[i].texture;
+        if(imagePacker->sprites.at(i).rotated)
         {
             QTransform myTransform;
             myTransform.rotate(90);
             img = img.transformed(myTransform);
             size.transpose();
-            crop = QRect(imagePacker.sprites.at(i).size.height() - crop.y() - crop.height(),
+            crop = QRect(imagePacker->sprites.at(i).size.height() - crop.y() - crop.height(),
                          crop.x(), crop.height(), crop.width());
         }
-        if(imagePacker.sprites.at(i).textureId < imagePacker.bins.size())
+        if(imagePacker->sprites.at(i).textureId < imagePacker->bins.size())
         {
-            QPainter p(&textures.operator [](imagePacker.sprites.at(i).textureId));
-            if(!exporting)
+            QPainter p(&textures.operator [](imagePacker->sprites.at(i).textureId));
+            if(configs->extrude)
             {
-//                p.fillRect(pos.x(), pos.y(), size.width() + 2 * configs->extrude, size.height() + 2 * configs->extrude, pattern);
-            }
-            if(previewWithImages || exporting)
-            {
-                if(configs->extrude)
+                QColor color1 = QColor::fromRgba(img.pixel(crop.x(), crop.y()));
+                p.setPen(color1);
+                p.setBrush(color1);
+                if(configs->extrude == 1)
                 {
-                    QColor color1 = QColor::fromRgba(img.pixel(crop.x(), crop.y()));
-                    p.setPen(color1);
-                    p.setBrush(color1);
-                    if(configs->extrude == 1)
-                    {
-                        p.drawPoint(QPoint(pos.x(), pos.y()));
-                    }
-                    else
-                    {
-                        p.drawRect(QRect(pos.x(), pos.y(), configs->extrude - 1, configs->extrude - 1));
-                    }
-
-                    QColor color2 = QColor::fromRgba(img.pixel(crop.x(), crop.y() + crop.height() - 1));
-                    p.setPen(color2);
-                    p.setBrush(color2);
-                    if(configs->extrude == 1)
-                    {
-                        p.drawPoint(QPoint(pos.x(), pos.y() + crop.height() + configs->extrude));
-                    }
-                    else
-                    {
-                        p.drawRect(QRect(pos.x(), pos.y() + crop.height() + configs->extrude, configs->extrude - 1, configs->extrude - 1));
-                    }
-
-                    QColor color3 = QColor::fromRgba(img.pixel(crop.x() + crop.width() - 1,
-                                                     crop.y()));
-                    p.setPen(color3);
-                    p.setBrush(color3);
-                    if(configs->extrude == 1)
-                    {
-                        p.drawPoint(QPoint(pos.x() + crop.width() + configs->extrude, pos.y()));
-                    }
-                    else
-                    {
-                        p.drawRect(QRect(pos.x() + crop.width() + configs->extrude, pos.y(),
-                                         configs->extrude - 1, configs->extrude - 1));
-                    }
-
-                    QColor color4 = QColor::fromRgba(img.pixel(crop.x() + crop.width() - 1,
-                                                     crop.y() + crop.height() - 1));
-                    p.setPen(color4);
-                    p.setBrush(color4);
-                    if(configs->extrude == 1)
-                    {
-                        p.drawPoint(QPoint(pos.x() + crop.width() + configs->extrude,
-                                           pos.y() + crop.height() + configs->extrude));
-                    }
-                    else
-                    {
-                        p.drawRect(QRect(pos.x() + crop.width() + configs->extrude,
-                                         pos.y() + crop.height() + configs->extrude, configs->extrude - 1,
-                                         configs->extrude - 1));
-                    }
-
-                    p.drawImage(QRect(pos.x(), pos.y() + configs->extrude, configs->extrude,
-                                      crop.height()), img, QRect(crop.x(), crop.y(), 1, crop.height()));
-                    p.drawImage(QRect(pos.x() + crop.width() + configs->extrude,
-                                      pos.y() + configs->extrude, configs->extrude, crop.height()), img,
-                                QRect(crop.x() + crop.width() - 1, crop.y(), 1, crop.height()));
-
-                    p.drawImage(QRect(pos.x() + configs->extrude, pos.y(), crop.width(),
-                                      configs->extrude), img, QRect(crop.x(), crop.y(), crop.width(), 1));
-                    p.drawImage(QRect(pos.x() + configs->extrude,
-                                      pos.y() + crop.height() + configs->extrude, crop.width(), configs->extrude), img,
-                                QRect(crop.x(), crop.y() + crop.height() - 1, crop.width(), 1));
-
-                    p.drawImage(pos.x() + configs->extrude, pos.y() + configs->extrude, img, crop.x(),
-                                crop.y(), crop.width(), crop.height());
+                    p.drawPoint(QPoint(pos.x(), pos.y()));
                 }
                 else
                 {
-                    p.drawImage(pos.x(), pos.y(), img, crop.x(), crop.y(), crop.width(),
-                                crop.height());
+                    p.drawRect(QRect(pos.x(), pos.y(), configs->extrude - 1, configs->extrude - 1));
                 }
+
+                QColor color2 = QColor::fromRgba(img.pixel(crop.x(), crop.y() + crop.height() - 1));
+                p.setPen(color2);
+                p.setBrush(color2);
+                if(configs->extrude == 1)
+                {
+                    p.drawPoint(QPoint(pos.x(), pos.y() + crop.height() + configs->extrude));
+                }
+                else
+                {
+                    p.drawRect(QRect(pos.x(), pos.y() + crop.height() + configs->extrude, configs->extrude - 1, configs->extrude - 1));
+                }
+
+                QColor color3 = QColor::fromRgba(img.pixel(crop.x() + crop.width() - 1,
+                                                 crop.y()));
+                p.setPen(color3);
+                p.setBrush(color3);
+                if(configs->extrude == 1)
+                {
+                    p.drawPoint(QPoint(pos.x() + crop.width() + configs->extrude, pos.y()));
+                }
+                else
+                {
+                    p.drawRect(QRect(pos.x() + crop.width() + configs->extrude, pos.y(),
+                                     configs->extrude - 1, configs->extrude - 1));
+                }
+
+                QColor color4 = QColor::fromRgba(img.pixel(crop.x() + crop.width() - 1,
+                                                 crop.y() + crop.height() - 1));
+                p.setPen(color4);
+                p.setBrush(color4);
+                if(configs->extrude == 1)
+                {
+                    p.drawPoint(QPoint(pos.x() + crop.width() + configs->extrude,
+                                       pos.y() + crop.height() + configs->extrude));
+                }
+                else
+                {
+                    p.drawRect(QRect(pos.x() + crop.width() + configs->extrude,
+                                     pos.y() + crop.height() + configs->extrude, configs->extrude - 1,
+                                     configs->extrude - 1));
+                }
+
+                p.drawImage(QRect(pos.x(), pos.y() + configs->extrude, configs->extrude,
+                                  crop.height()), img, QRect(crop.x(), crop.y(), 1, crop.height()));
+                p.drawImage(QRect(pos.x() + crop.width() + configs->extrude,
+                                  pos.y() + configs->extrude, configs->extrude, crop.height()), img,
+                            QRect(crop.x() + crop.width() - 1, crop.y(), 1, crop.height()));
+
+                p.drawImage(QRect(pos.x() + configs->extrude, pos.y(), crop.width(),
+                                  configs->extrude), img, QRect(crop.x(), crop.y(), crop.width(), 1));
+                p.drawImage(QRect(pos.x() + configs->extrude,
+                                  pos.y() + crop.height() + configs->extrude, crop.width(), configs->extrude), img,
+                            QRect(crop.x(), crop.y() + crop.height() - 1, crop.width(), 1));
+
+                p.drawImage(pos.x() + configs->extrude, pos.y() + configs->extrude, img, crop.x(),
+                            crop.y(), crop.width(), crop.height());
             }
             else
-                if(!exporting)
-                {
-                    p.drawRect(pos.x(), pos.y(), size.width() - 1, size.height() - 1);
-                }
+            {
+                p.drawImage(pos.x(), pos.y(), img, crop.x(), crop.y(), crop.width(),
+                            crop.height());
+            }
         }
     }
     for(int i = 0; i < textures.count(); i++)
     {
         area += textures.at(i).width() * textures.at(i).height();
     }
-    float percent = (((float)imagePacker.area / (float)area) * 100.0f);
-    float percent2 = (float)(((float)imagePacker.neededArea / (float)area) * 100.0f);
+    float percent = (((float)imagePacker->area / (float)area) * 100.0f);
+    float percent2 = (float)(((float)imagePacker->neededArea / (float)area) * 100.0f);
     statusLabel->setText(tr("Preview: ") +
                          QString::number(percent) + QString("% filled, ") +
-                         (imagePacker.missingImages == 0 ? QString::number(imagePacker.missingImages) +
+                         (imagePacker->missingImages == 0 ? QString::number(imagePacker->missingImages) +
                           tr(" images missed,") :
-                          QString("<font color=red><b>") + QString::number(imagePacker.missingImages) +
+                          QString("<font color=red><b>") + QString::number(imagePacker->missingImages) +
                           tr(" images missed,") + "</b></font>") +
-                         " " + QString::number(imagePacker.mergedImages) + tr(" images merged, needed area: ")
+                         " " + QString::number(imagePacker->mergedImages) + tr(" images merged, needed area: ")
                          +
                          QString::number(percent2) + "%." + tr(" KBytes: ") + QString::number(
                              area * 4 / 1024));
-    if(exporting)
-    {
-        const char *format = qPrintable(outFormat);
-        for(int i = 0; i < textures.count(); i++)
-        {
-            QString imgdirFile;
-            imgdirFile = outDir;
-            imgdirFile += QDir::separator();
-            imgdirFile += outFile;
-            if(textures.count() > 1)
-            {
-                imgdirFile += QString("_") + QString::number(i + 1);
-            }
-            imgdirFile += ".";
-            imgdirFile += outFormat.toLower();
-            if(outFormat == "JPG")
-            {
-                textures.at(i).save(imgdirFile, format, 100);
-            }
-            else
-            {
-                textures.at(i).save(imgdirFile);
-            }
-        }
-        QMessageBox::information(0, tr("Done"),
-                                 tr("Your atlas successfully saved in ") + outDir);
-        exporting = false;
-    }
-    else
-    {
-        emit renderedImage(textures);
-    }
+
+    emit renderedImage(textures);
 }
 
 void MainWindow::newProject() {
@@ -647,13 +526,27 @@ void MainWindow::newProject() {
 }
 
 void MainWindow::spriteItemClicked(QTreeWidgetItem *item, int column) {
-//    addedSpritesTreeWidget->setCurrentItem(item);
+    Q_UNUSED(item);
+    Q_UNUSED(column);
 }
 
 void MainWindow::onPublishSpriteSheet() {
-    updateSpriteSheet(true);
+    publishAtlas();
 }
 
+void MainWindow::publishAtlas() {
+    packer::ConfigurationsPtr& configs = projectLoader.getConfigurations();
+    imagePacker->pack(configs);
+
+    exporter::ConfigurationsPtr exportConfig = exporter::ConfigurationsPtr(new exporter::Configurations);
+    exportConfig->dataFilePath = "/Data/GitHub/test.plist";
+    exportConfig->outputFormat = "png";
+    if (exporter::Export_OK == atlasExporter->exportSpriteSheet(imagePacker, exportConfig)) {
+        QMessageBox::information(this, tr("Done"), tr("Export successfull"));
+    } else {
+        QMessageBox::critical(this, tr("Error"), tr("Export failed"));
+    }
+}
 
 
 
