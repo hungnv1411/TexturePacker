@@ -21,15 +21,6 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("TexturePacker"));
 
     readSettings();
-
-    pattern = QPixmap(20, 20);
-    QPainter painter(&pattern);
-#define BRIGHT 190
-#define SHADOW 150
-    painter.fillRect(0, 0, 10, 10, QColor(SHADOW, SHADOW, SHADOW));
-    painter.fillRect(10, 0, 10, 10, QColor(BRIGHT, BRIGHT, BRIGHT));
-    painter.fillRect(10, 10, 10, 10, QColor(SHADOW, SHADOW, SHADOW));
-    painter.fillRect(0, 10, 10, 10, QColor(BRIGHT, BRIGHT, BRIGHT));
 }
 
 MainWindow::~MainWindow()
@@ -83,6 +74,13 @@ void MainWindow::createActions() {
     addSmartFolderAction->setIconVisibleInMenu(true);
     addSmartFolderAction->setIconText(tr("Add smart folder"));
 
+    // publish
+    publishAction = new QAction(tr("&Publish sprite sheet"), this);
+    publishAction->setStatusTip(tr("Publish sprite sheet"));
+    publishAction->setIcon(QIcon(":/res/ic_publish_project.png"));
+    publishAction->setIconVisibleInMenu(true);
+    publishAction->setIconText(tr("Publish sprite sheet"));
+
     // menu tool
     optionAction = new QAction(tr("&Options"), this);
     optionAction->setStatusTip(tr("Options"));
@@ -133,6 +131,13 @@ void MainWindow::createToolbar() {
     fileToolbar->addAction(addSpriteAction);
     fileToolbar->addAction(removeSpriteAction);
     fileToolbar->addAction(addSmartFolderAction);
+
+    empty = new QWidget();
+    empty->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    empty->setFixedWidth(50);
+    fileToolbar->addWidget(empty);
+
+    fileToolbar->addAction(publishAction);
 
     empty = new QWidget();
     empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -216,6 +221,7 @@ void MainWindow::initConnections() {
     connect(addSmartFolderAction, &QAction::triggered, this, &MainWindow::onAddSmartFolder);
     connect(removeSpriteAction, &QAction::triggered, this, &MainWindow::removeSelectedSprites);
     connect(addedSpritesTreeWidget, &QTreeWidget::itemClicked, this, &MainWindow::spriteItemClicked);
+    connect(publishAction, &QAction::triggered, this, &MainWindow::onPublishSpriteSheet);
 
     connect(this, &MainWindow::renderedImage, atlasPreview, &AtlasTextureView::updatePixmap);
 }
@@ -369,7 +375,7 @@ void MainWindow::updateSpriteSheet(bool exporting) {
     int i;
     quint64 area = 0;
     QString outDir = "/Data/GitHub";
-    QString outFile = "/Data/GitHub/atlas";
+    QString outFile = "atlas";
     QString outFormat = "png";
     bool previewWithImages = true;
 
@@ -498,8 +504,7 @@ void MainWindow::updateSpriteSheet(bool exporting) {
             QPainter p(&textures.operator [](imagePacker.sprites.at(i).textureId));
             if(!exporting)
             {
-                p.fillRect(pos.x(), pos.y(), size.width() + 2 * configs->extrude,
-                           size.height() + 2 * configs->extrude, pattern);
+//                p.fillRect(pos.x(), pos.y(), size.width() + 2 * configs->extrude, size.height() + 2 * configs->extrude, pattern);
             }
             if(previewWithImages || exporting)
             {
@@ -645,6 +650,9 @@ void MainWindow::spriteItemClicked(QTreeWidgetItem *item, int column) {
 //    addedSpritesTreeWidget->setCurrentItem(item);
 }
 
+void MainWindow::onPublishSpriteSheet() {
+    updateSpriteSheet(true);
+}
 
 
 
