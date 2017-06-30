@@ -37,7 +37,8 @@ SOURCES += \
     views/SettingPanel.cpp \
     AtlasTextureView.cpp \
     exporter/Exporter.cpp \
-    exporter/CocosExporter.cpp
+    exporter/CocosExporter.cpp \
+    views/SettingLabel.cpp
 
 HEADERS += \
         MainWindow.hpp \
@@ -53,7 +54,8 @@ HEADERS += \
     views/SettingPanel.hpp \
     AtlasTextureView.hpp \
     exporter/Exporter.hpp \
-    exporter/CocosExporter.hpp
+    exporter/CocosExporter.hpp \
+    views/SettingLabel.hpp
 
 RESOURCES += \
     Resources.qrc
