@@ -3,7 +3,7 @@
 SettingPanel::SettingPanel(QWidget *parent) : QWidget(parent)
 {
     mainLayout = new QVBoxLayout();
-    mainLayout->setMargin(0);
+//    mainLayout->setMargin(0);
 
     headerButton = new QPushButton(this);
     headerButton->setFixedHeight(30);
@@ -15,12 +15,12 @@ SettingPanel::SettingPanel(QWidget *parent) : QWidget(parent)
 //    headerButton->setAutoFillBackground(true);
 //    headerButton->setPalette(palette);
 
-    headerButton->setStyleSheet("QPushButton { \
-                                    border-image: url(:/res/ic_setting_panel_header.png); \
-                                    font: 11px; \
-                                    text-align: left; \
-                                    padding-left: 10px; \
-                                }");
+//    headerButton->setStyleSheet("QPushButton { \
+//                                    border-image: url(:/res/ic_setting_panel_header.png); \
+//                                    font: 11px; \
+//                                    text-align: left; \
+//                                    padding-left: 10px; \
+//                                }");
 
     mainLayout->addWidget(headerButton);
     mainLayout->setAlignment(headerButton, Qt::AlignTop);

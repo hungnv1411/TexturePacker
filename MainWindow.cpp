@@ -197,7 +197,7 @@ void MainWindow::createExporterSettingPane() {
     scrollLayout->addWidget(dataSettingView);
     scrollLayout->addWidget(textureSettingView);
     scrollLayout->addWidget(spriteSettingView);
-    scrollLayout->setMargin(0);
+//    scrollLayout->setContentsMargins(0);
 
     QWidget* scrollWidget = new QWidget();
     scrollWidget->setLayout(scrollLayout);
@@ -240,7 +240,7 @@ void MainWindow::readSettings() {
     QSettings settings(QCoreApplication::organizationName(), QCoreApplication::applicationName());
     const QByteArray geometry = settings.value("geometry", QByteArray()).toByteArray();
     if (geometry.isEmpty()) {
-        const QRect availableGeometry = QApplication::desktop()->availableGeometry(this);
+        const QRect availableGeometry = QApplication::primaryScreen()->availableGeometry();
         resize(availableGeometry.width() * 0.75, availableGeometry.height() * 0.75);
         move((availableGeometry.width() - width()) / 2, (availableGeometry.height() - height()) / 2);
     } else {
@@ -329,7 +329,7 @@ void MainWindow::loadDirectory(const QString& directory) {
         }
         rootItem->setExpanded(true);
 
-        updateSpriteSheet();
+        updateSpriteSheet(false);
     }
 }
 
@@ -634,7 +634,7 @@ void MainWindow::updateSpriteSheet(bool exporting) {
         }
         QMessageBox::information(0, tr("Done"),
                                  tr("Your atlas successfully saved in ") + outDir);
-        exporting = false;
+//        exporting = false;
     }
     else
     {

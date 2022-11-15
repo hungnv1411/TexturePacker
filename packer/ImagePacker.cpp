@@ -384,16 +384,16 @@ void ImagePacker::sort()
     switch(configs->sortOrder)
     {
     case 1:
-        qSort(sprites.begin(), sprites.end(), ImageCompareByWidth);
+        std::sort(sprites.begin(), sprites.end(), ImageCompareByWidth);
         break;
     case 2:
-        qSort(sprites.begin(), sprites.end(), ImageCompareByHeight);
+        std::sort(sprites.begin(), sprites.end(), ImageCompareByHeight);
         break;
     case 3:
-        qSort(sprites.begin(), sprites.end(), ImageCompareByArea);
+        std::sort(sprites.begin(), sprites.end(), ImageCompareByArea);
         break;
     case 4:
-        qSort(sprites.begin(), sprites.end(), ImageCompareByMax);
+        std::sort(sprites.begin(), sprites.end(), ImageCompareByMax);
         break;
     }
 }
