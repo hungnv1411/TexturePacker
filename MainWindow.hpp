@@ -7,8 +7,7 @@
 #include "TPProject.hpp"
 #include "AtlasTextureView.hpp"
 #include "packer/ImagePacker.hpp"
-
-using namespace packer;
+#include "exporter/CocosExporter.hpp"
 
 class MainWindow : public QMainWindow
 {
@@ -31,8 +30,9 @@ private:
     void writeSettings();
     bool requestSaveProject();
     bool saveProject();
-    void updateSpriteSheet(bool exporting = false);
+    void updateSpriteSheet();
     void newProject();
+    void publishAtlas();
 
     // packer
 private:
@@ -82,7 +82,8 @@ private:
 
 private:
     TPProject projectLoader;
-    packer::ImagePacker imagePacker;
+    packer::ImagePackerPtr imagePacker;
+    exporter::ExporterPtr atlasExporter;
 };
 
 #endif // MAINWINDOW_HPP

@@ -23,6 +23,14 @@ QString Utils::getFileName(const QString &filePath) {
     return filePath;
 }
 
+QString Utils::getContainingDirectory(const QString& filePath) {
+    int idx = filePath.lastIndexOf(QDir::separator());
+    if (idx != -1) {
+        return filePath.left(idx + 1);
+    }
+    return filePath;
+}
+
 QString Utils::getFileExtension(const QString &filePath) {
     int idx = filePath.lastIndexOf(".");
     if (idx != -1) {
