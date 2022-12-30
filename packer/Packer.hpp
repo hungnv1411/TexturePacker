@@ -50,7 +50,7 @@ struct Sprite {
     Sprite(const QString& path) {
         this->path = path;
         this->texture = QImage(path);
-        this->hash = Utils::hash(0, texture.bits(), texture.byteCount());
+        this->hash = Utils::hash(0, texture.bits(), texture.sizeInBytes() );
         textureId = -1;
         duplicatedSprite = NULL;
         size = texture.size();
