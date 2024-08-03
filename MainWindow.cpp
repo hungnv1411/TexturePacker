@@ -332,7 +332,7 @@ void MainWindow::loadDirectory(const QString& directory) {
         }
         rootItem->setExpanded(true);
 
-        updateSpriteSheet(false);
+        updateSpriteSheet();
     }
 }
 
